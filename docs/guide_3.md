@@ -248,7 +248,7 @@ If something is not working as expected, check the following:
 
 - **BGP session not establishing:** Verify that TCP port 179 is open on the FRR host and that the ASN values match between the FRR configuration and the MetalLB `BGPPeer` resource. Run `sudo vtysh -c "show ip bgp summary"` on the FRR host to check session state.
 - **VIP not assigned:** Ensure the `IPAddressPool` is created in the correct namespace (`openshift-operators`) and that `autoAssign` is set to `true`. Check the MetalLB speaker pod logs on the management cluster for errors.
-- **DNS not resolving:** Confirm the A records for `api.` and `api-int.` were created and that the DNS server is reachable from the client where you are running `dig` or `oc login`.
+- **DNS not resolving:** Confirm the A records for `api.` was created and that the DNS server is reachable from the client where you are running `dig` or `oc login`.
 - **Route not appearing on the FRR host:** Verify that the `BGPAdvertisement` resource references the correct `ipAddressPools` name and that the BGP sessions are in `Established` state.
 
 # Summary
