@@ -192,17 +192,6 @@ The installation of the hosted cluster is based on a custom resource named `Host
           type: LoadBalancer
     ```
 
-# DNS Configuration
-
-Before verifying connectivity, you must create DNS records that point the hosted cluster's API endpoints to the MetalLB VIP. Create the following A records in your DNS server:
-
-| Record | Value |
-|--------|-------|
-| `api.hosted.hypershift.lab` | `10.0.2.20` |
-| `api-int.hosted.hypershift.lab` | `10.0.2.20` |
-
-Both records should resolve to the VIP assigned from the MetalLB IP address pool.
-
 # Verify the Connection
 
 - **DNS:** Confirm that both API records resolve to the VIP.
