@@ -7,6 +7,8 @@
 HCP Architecture
 
 
+this lab setup
+
 -Management cluster
 -Hosted Cluster
 
