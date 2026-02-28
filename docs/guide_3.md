@@ -1,13 +1,13 @@
-# Publish Hosted Cluster API with LoadBalancer Service
+# Expose the Hosted Cluster API Server Using a MetalLB LoadBalancer in BGP Mode
 
 # Introduction
-Exposing the API server of a Hosted Control Plane (HCP) using MetalLB in BGP mode is a robust, enterprise-grade approach. It provides highly available and load-balanced access to your hosted cluster's control plane components.
+Exposing the API server of a Hosted Control Plane (HCP) using MetalLB in BGP mode is a robust, enterprise-grade approach. It provides highly available and load-balanced access to your hosted cluster's API server.
 
 A key concept in HCP is that the API server of your hosted cluster runs as a pod (or three if the Hosted Cluster is configured with HA) on the management cluster. Therefore, MetalLB must be installed and configured on the management cluster, not on the hosted cluster's worker nodes.
 
 Here is a simple guide on how to achieve this, broken down into prerequisites, FRR router setup, MetalLB configuration, hosted cluster installation, and verification steps.
 
-MetalLB allows more advanced configurations, such as faster failure detection when a management cluster node becomes unreachable or advertising additional routes. Refer to the OpenShift MetalLB documentation for more details, [here](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/ingress_and_load_balancing/load-balancing-with-metallb#nw-metallb-l2padvertisement-cr_about-advertising-ip-address-pool).
+MetalLB allows more advanced configurations, such as faster failure detection when a management cluster node becomes unreachable or advertising additional routes. Refer to the [OpenShift MetalLB documentation](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/ingress_and_load_balancing/load-balancing-with-metallb#nw-metallb-l2padvertisement-cr_about-advertising-ip-address-pool) for more details.
 
 # Prerequisites
 Before deploying the hosted cluster, ensure your underlying infrastructure and management cluster are prepared:
@@ -19,7 +19,7 @@ Before deploying the hosted cluster, ensure your underlying infrastructure and m
 
 ![Alt text](../images/arch_api_expose_metallb_bgp.png?raw=true "arch_api_expose_metallb_bgp")
 
-## DNS records and IPs
+## DNS Records and IPs
 
 ![Alt text](../images/arch_api_expose_metallb_bgp-dns.png?raw=true "arch_api_expose_metallb_bgp-dns")
 
@@ -40,8 +40,9 @@ This section covers how to configure an external FRR router to peer with your ma
 
   For your Linux host to route traffic (like a real router would), you must tell the kernel to allow IP forwarding. Without this, the host will receive traffic for the MetalLB VIP but will drop it instead of routing it. Add the following line to enable IPv4 forwarding:
 
-  ```sh
-  sudo vi /etc/sysctl.d/90-routing.conf
+  Edit `/etc/sysctl.d/90-routing.conf` and add:
+
+  ```ini
   net.ipv4.ip_forward = 1
   ```
 
@@ -114,7 +115,7 @@ This section covers how to configure an external FRR router to peer with your ma
 
   You should see your management node IPs listed, and the State/PfxRcd column should show a number (the number of routes received, which corresponds to your VIP).
 
-Additional advanced configurations can be added to detect management cluster node failure and reduce the detection time by implementing BFD (Bidirectional Forwarding Detection). This isn't addressed in this repo.
+> **Note:** Additional advanced configurations can be added to detect management cluster node failure and reduce the detection time by implementing BFD (Bidirectional Forwarding Detection). This isn't addressed in this repo.
 
 
 # MetalLB BGP Setup
@@ -164,7 +165,7 @@ spec:
   - hcp-api-pool
 ```
 
-Once these are applied, MetalLB will assign the VIP from the pool to the kube-apiserver LoadBalancer service, and the BGP speakers will advertise a /32 route for that VIP to your router.
+With these resources in place, when the hosted cluster is created and its kube-apiserver LoadBalancer Service appears, MetalLB will assign the VIP from the pool and the BGP speakers will advertise a /32 route for that VIP to your router.
 
 
 # Install the Hosted Cluster
@@ -177,7 +178,7 @@ The installation of the hosted cluster is based on a custom resource named `Host
 
 - Press the button to create a new cluster.
 
-- In ACM, fill out the form to create a new cluster. Just before confirming the creation, press to view the YAML and configure the service type:
+- In ACM, fill out the form to create a new cluster. Just before confirming the creation, click **Edit YAML** to switch to the YAML view and configure the service type:
   - The field that controls how the hosted API server will be exposed is under `spec.services` -> `service: APIServer`. To use a service of type LoadBalancer, apply the following configuration:
 
     ```yaml
@@ -218,6 +219,8 @@ The installation of the hosted cluster is based on a custom resource named `Host
   ```
 
 - **Management cluster:** Verify the LoadBalancer service exposing the hosted cluster API server. The `EXTERNAL-IP` column should show the VIP from your IPAddressPool.
+
+  The namespace follows the pattern `<clusters-namespace>-<cluster-name>`. In this example, the clusters namespace is `hosted` and the cluster name is `hosted`, resulting in `hosted-hosted`.
 
   ```sh
   oc -n hosted-hosted get svc kube-apiserver
