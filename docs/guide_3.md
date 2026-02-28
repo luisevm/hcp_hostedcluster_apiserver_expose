@@ -242,6 +242,78 @@ The installation of the hosted cluster is based on a custom resource named `Host
   sudo vtysh -c "show ip bgp"
   ```
 
+```sh
+
+[lab-user@bastion ~]$ ip route show 10.0.2.20
+10.0.2.20 nhid 60 proto bgp metric 20 
+        nexthop via 192.168.125.20 dev hypershiftlab weight 1 
+        nexthop via 192.168.125.21 dev hypershiftlab weight 1 
+        nexthop via 192.168.125.22 dev hypershiftlab weight 1 
+
+
+
+[lab-user@bastion ~]$ sudo vtysh -c "show ip route"
+Codes: K - kernel route, C - connected, S - static, R - RIP,
+       O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, F - PBR,
+       f - OpenFabric,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+       t - trapped, o - offload failure
+
+K>* 0.0.0.0/0 [0/100] via 10.0.2.1, eth0, src 10.0.2.2, 01:44:53
+C>* 10.0.2.0/24 is directly connected, eth0, 01:44:53
+B>* 10.0.2.20/32 [20/0] via 192.168.125.20, hypershiftlab, weight 1, 00:14:13
+  *                     via 192.168.125.21, hypershiftlab, weight 1, 00:14:13
+  *                     via 192.168.125.22, hypershiftlab, weight 1, 00:14:13
+C>* 10.88.0.0/16 is directly connected, podman0, 01:44:53
+C>* 192.168.125.0/24 is directly connected, hypershiftlab, 01:44:53
+
+
+
+[lab-user@bastion ~]$ sudo vtysh -c "show ip bgp summary"
+
+IPv4 Unicast Summary (VRF default):
+BGP router identifier 192.168.125.1, local AS number 64512 vrf-id 0
+BGP table version 5
+RIB entries 1, using 192 bytes of memory
+Peers 3, using 2174 KiB of memory
+
+Neighbor        V         AS   MsgRcvd   MsgSent   TblVer  InQ OutQ  Up/Down State/PfxRcd   PfxSnt Desc
+192.168.125.20  4      64513       108       109        0    0    0 01:40:31            1        1 N/A
+192.168.125.21  4      64513       108       109        0    0    0 01:40:31            1        1 N/A
+192.168.125.22  4      64513       108       109        0    0    0 01:40:31            1        1 N/A
+
+Total number of neighbors 3
+
+
+
+[lab-user@bastion ~]$ sudo vtysh -c "show ip bgp"
+BGP table version is 5, local router ID is 192.168.125.1, vrf id 0
+Default local pref 100, local AS 64512
+Status codes:  s suppressed, d damped, h history, * valid, > best, = multipath,
+               i internal, r RIB-failure, S Stale, R Removed
+Nexthop codes: @NNN nexthop's vrf id, < announce-nh-self
+Origin codes:  i - IGP, e - EGP, ? - incomplete
+RPKI validation codes: V valid, I invalid, N Not found
+
+    Network          Next Hop            Metric LocPrf Weight Path
+ *= 10.0.2.20/32     192.168.125.21           0             0 64513 i
+ *=                  192.168.125.22           0             0 64513 i
+ *>                  192.168.125.20           0             0 64513 i
+
+Displayed  1 routes and 3 total paths
+```
+
+Breakdown of the key successes:
+- The Service got the IP: kube-apiserver successfully grabbed 10.0.2.20 from the updated MetalLB pool.
+
+- BGP learned the routes: The PfxRcd column in your BGP summary now shows 1 instead of 0.
+
+- The Kernel is ready to Load Balance: Your ip route show 10.0.2.20 output beautifully displays the multipath route with three nexthop via entries pointing to the hypershiftlab network interface.
+
+
+
+
 # Troubleshooting
 
 If something is not working as expected, check the following:
